@@ -1,0 +1,331 @@
+const express = require('express');
+const router = express.Router();
+const jwt = require('jsonwebtoken');
+const User = require('../models/User');
+
+const JWT_SECRET = process.env.JWT_SECRET || 'your_jwt_secret';
+
+// Register
+router.post('/register', async (req, res) => {
+  const { email, password } = req.body;
+  if (!email || !password) return res.status(400).json({ message: 'Email and password required' });
+
+  try {
+    let user = await User.findOne({ email });
+    if (user) return res.status(400).json({ message: 'Email already registered' });
+
+    user = new User({ email, password });
+    await user.save();
+
+    const token = jwt.sign({ userId: user._id }, JWT_SECRET, { expiresIn: '1d' });
+    res.status(201).json({ token, email: user.email });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// Login
+router.post('/login', async (req, res) => {
+  const { email, password } = req.body;
+  if (!email || !password) return res.status(400).json({ message: 'Email and password required' });
+
+  try {
+    const user = await User.findOne({ email });
+    if (!user) return res.status(400).json({ message: 'Invalid credentials' });
+
+    const isMatch = await user.comparePassword(password);
+    if (!isMatch) return res.status(400).json({ message: 'Invalid credentials' });
+
+    const token = jwt.sign({ userId: user._id }, JWT_SECRET, { expiresIn: '1d' });
+    res.json({ token, email: user.email });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+module.exports = router;
+
+
+
+register.js
+
+import React, { useState } from 'react';
+import axios from 'axios';
+
+function Register({ onRegister }) {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+
+  const handleSubmit = async e => {
+    e.preventDefault();
+    try {
+      const res = await axios.post('http://localhost:5000/auth/register', { email, password });
+      localStorage.setItem('token', res.data.token);
+      onRegister(res.data.email);
+      alert('Registered and logged in!');
+    } catch (err) {
+      alert(err.response?.data?.message || 'Registration failed');
+    }
+  };
+
+  return (
+    <div>
+      <h2>Register</h2>
+      <form onSubmit={handleSubmit}>
+        <input value={email} onChange={e => setEmail(e.target.value)} type="email" placeholder="Email" required />
+        <input value={password} onChange={e => setPassword(e.target.value)} type="password" placeholder="Password" required />
+        <button type="submit">Register</button>
+      </form>
+    </div>
+  );
+}
+
+export default Register;
+
+
+
+server.js
+
+const express = require('express');
+const mongoose = require('mongoose');
+const cors = require('cors');
+require('dotenv').config();
+const wasteRoutes = require('./routes/waste');
+const authRoutes = require('./routes/auth');
+
+const app = express();
+app.use(cors());
+app.use(express.json());
+app.use('/', wasteRoutes);
+app.use('/auth', authRoutes);
+
+// MongoDB connection
+mongoose.connect(process.env.MONGO_URI)
+  .then(() => console.log("MongoDB connected"))
+  .catch(err => console.error(err));
+
+// Sample route
+app.get('/', (req, res) => {
+  res.send('Waste Management Backend Running');
+});
+
+app.listen(5000, () => {
+  console.log("Server started on port 5000");
+});
+
+
+
+
+
+ctizenai
+
+!pip install transformers torch gradio -q
+
+import gradio as gr
+import torch
+from transformers import AutoTokenizer, AutoModelForCausalLM
+
+# ---------------------------
+# Load model and tokenizer
+# ---------------------------
+model_name = "ibm-granite/granite-3.2-2b-instruct"
+tokenizer = AutoTokenizer.from_pretrained(model_name)
+model = AutoModelForCausalLM.from_pretrained(
+    model_name,
+    torch_dtype=torch.float16 if torch.cuda.is_available() else torch.float32,
+    device_map="auto" if torch.cuda.is_available() else None
+)
+
+# Fix padding token issue
+if tokenizer.pad_token is None:
+    tokenizer.pad_token = tokenizer.eos_token
+
+# ---------------------------
+# Helper Function: Generate Response
+# ---------------------------
+def generate_response(prompt, max_length=1024):
+    inputs = tokenizer(prompt, return_tensors="pt", truncation=True, max_length=512)
+
+    if torch.cuda.is_available():
+        inputs = {k: v.to(model.device) for k, v in inputs.items()}
+
+    with torch.no_grad():
+        outputs = model.generate(
+            **inputs,
+            max_length=max_length,
+            temperature=0.7,
+            do_sample=True,
+            pad_token_id=tokenizer.eos_token_id
+        )
+
+    return tokenizer.decode(outputs[0], skip_special_tokens=True).strip()
+
+# ---------------------------
+# Tab 1: City Analysis
+# ---------------------------
+def city_analysis(city_name):
+    prompt = (
+        f"Provide a detailed analysis of {city_name} including:\n"
+        f"1. Crime Index and safety statistics\n"
+        f"2. Accident rates and traffic safety information\n"
+        f"3. Overall safety assessment\n\n"
+        f"City: {city_name}\nAnalysis:"
+    )
+    return generate_response(prompt, max_length=1000)
+
+# ---------------------------
+# Tab 2: Citizen Services
+# ---------------------------
+def citizen_interaction(query):
+    prompt = (
+        f"As a government assistant, provide accurate and helpful information about "
+        f"the following citizen query related to public services, government policies, or civic issues:\n\n"
+        f"Query: {query}\nResponse:"
+    )
+    return generate_response(prompt, max_length=1000)
+
+# ---------------------------
+# Tab 3: Feedback & Sentiment
+# ---------------------------
+def feedback_sentiment(feedback_text):
+    # Sentiment classification
+    sentiment_prompt = (
+        f"Analyze the sentiment of the following feedback and classify it as Positive, Negative, or Neutral:\n\n"
+        f"Feedback: {feedback_text}\nSentiment:"
+    )
+    sentiment = generate_response(sentiment_prompt, max_length=100)
+
+    # Feedback summary
+    summary_prompt = (
+        f"Summarize the following feedback in 1-2 sentences, highlighting the main points:\n\n"
+        f"Feedback: {feedback_text}\nSummary:"
+    )
+    summary = generate_response(summary_prompt, max_length=150)
+
+    return sentiment, summary
+
+# ---------------------------
+# Tab 4: Report Concern
+# ---------------------------
+def report_concern(name, category, location, description):
+    prompt = (
+        f"A citizen has reported a concern. Create a formal, well-structured report for government review.\n\n"
+        f"Citizen Name: {name}\n"
+        f"Category: {category}\n"
+        f"Location: {location}\n"
+        f"Description of Issue: {description}\n\n"
+        f"Report:"
+    )
+    report = generate_response(prompt, max_length=800)
+    return report
+
+# ---------------------------
+# Create Gradio Interface
+# ---------------------------
+with gr.Blocks() as app:
+    gr.Markdown("# 🏙 City Analysis, Citizen Services & Reporting AI")
+
+    with gr.Tabs():
+        # ------------------- TAB 1: City Analysis -------------------
+        with gr.TabItem("City Analysis"):
+            with gr.Row():
+                with gr.Column():
+                    city_input = gr.Textbox(
+                        label="Enter City Name",
+                        placeholder="e.g., New York, London, Mumbai...",
+                        lines=1
+                    )
+                    analyze_btn = gr.Button("Analyze City")
+
+                with gr.Column():
+                    city_output = gr.Textbox(
+                        label="City Analysis (Crime Index & Accidents)",
+                        lines=15
+                    )
+
+            analyze_btn.click(city_analysis, inputs=city_input, outputs=city_output)
+
+        # ------------------- TAB 2: Citizen Services -------------------
+        with gr.TabItem("Citizen Services"):
+            with gr.Row():
+                with gr.Column():
+                    citizen_query = gr.Textbox(
+                        label="Your Query",
+                        placeholder="Ask about public services, government policies, civic issues...",
+                        lines=4
+                    )
+                    query_btn = gr.Button("Get Information")
+
+                with gr.Column():
+                    citizen_output = gr.Textbox(
+                        label="Government Response",
+                        lines=15
+                    )
+
+            query_btn.click(citizen_interaction, inputs=citizen_query, outputs=citizen_output)
+
+        # ------------------- TAB 3: Feedback & Sentiment -------------------
+        with gr.TabItem("Feedback & Sentiment"):
+            with gr.Row():
+                with gr.Column():
+                    feedback_input = gr.Textbox(
+                        label="Your Feedback",
+                        placeholder="Enter your feedback about the service...",
+                        lines=4
+                    )
+                    feedback_btn = gr.Button("Analyze Feedback")
+
+                with gr.Column():
+                    sentiment_output = gr.Textbox(label="Detected Sentiment", lines=2)
+                    summary_output = gr.Textbox(label="Feedback Summary", lines=5)
+
+            feedback_btn.click(
+                feedback_sentiment,
+                inputs=feedback_input,
+                outputs=[sentiment_output, summary_output]
+            )
+
+        # ------------------- TAB 4: Report Concern -------------------
+        with gr.TabItem("Report Concern"):
+            with gr.Row():
+                with gr.Column():
+                    citizen_name = gr.Textbox(
+                        label="Your Name",
+                        placeholder="Enter your full name",
+                        lines=1
+                    )
+                    category = gr.Dropdown(
+                        label="Category of Concern",
+                        choices=["Road Issue", "Garbage/Trash", "Water Supply", "Electricity", "Safety", "Other"],
+                        value="Road Issue"
+                    )
+                    location = gr.Textbox(
+                        label="Location",
+                        placeholder="Enter location of the issue",
+                        lines=1
+                    )
+                    description = gr.Textbox(
+                        label="Describe the Issue",
+                        placeholder="Describe the issue in detail...",
+                        lines=4
+                    )
+                    report_btn = gr.Button("Generate Report")
+
+                with gr.Column():
+                    report_output = gr.Textbox(
+                        label="Generated Report",
+                        lines=15
+                    )
+
+            report_btn.click(
+                report_concern,
+                inputs=[citizen_name, category, location, description],
+                outputs=report_output
+            )
+
+# ---------------------------
+# Launch the App
+# ---------------------------
+app.launch(share=True)

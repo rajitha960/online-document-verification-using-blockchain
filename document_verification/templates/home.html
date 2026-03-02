@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+{% block content %}
+
+<style>
+body {
+    background: linear-gradient(135deg, #1e3c72, #f9a6dd);
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.hero-section {
+    height: 90vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.hero-card {
+    max-width: 700px;
+    padding: 60px;
+    border-radius: 20px;
+    background: rgba(255, 255, 255, 0.08);
+    backdrop-filter: blur(15px);
+    box-shadow: 0 25px 50px rgba(0,0,0,0.3);
+    text-align: center;
+    color: #ffffff;
+}
+
+.hero-card h1 {
+    font-weight: 700;
+    margin-bottom: 20px;
+}
+
+.hero-card p {
+    font-size: 16px;
+    color: #dcdcdc;
+}
+
+.hero-buttons .btn {
+    padding: 10px 25px;
+    border-radius: 8px;
+    font-weight: 500;
+}
+
+.btn-login {
+    background-color: #0d6efd;
+    border: none;
+}
+
+.btn-register {
+    background-color: #198754;
+    border: none;
+}
+</style>
+
+<div class="hero-section">
+    <div class="hero-card">
+
+        <h1>🔗 Blockchain Document Verification</h1>
+
+        <p>
+            Securely upload, verify and protect digital documents 
+            using Blockchain technology with tamper detection and hash validation.
+        </p>
+
+        <div class="hero-buttons mt-4">
+            <a href="{{ url_for('login') }}" class="btn btn-login me-3">
+                Login
+            </a>
+
+            <a href="{{ url_for('register') }}" class="btn btn-register">
+                Register
+            </a>
+        </div>
+
+    </div>
+</div>
+
+{% endblock %}

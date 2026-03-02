@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+{% block content %}
+
+<h3 class="mb-4">📤 Upload Document</h3>
+
+<div class="card shadow-sm p-4">
+
+    <!-- 🔴 CAMERA SECTION -->
+    <h5 class="text-center">📷 Scan from Camera</h5>
+
+    <div class="text-center mb-3">
+        <video id="camera"
+               style="width: 350px; height: 260px; border-radius: 12px; border: 2px solid #444; object-fit: cover;"
+               autoplay>
+        </video>
+    </div>
+
+    <div class="text-center">
+        <button type="button" class="btn btn-success mb-3" onclick="capture()">
+            📸 Capture
+        </button>
+    </div>
+
+    <!-- Hidden canvas -->
+    <canvas id="canvas" style="display:none;"></canvas>
+
+    <hr>
+    <h6 class="text-center">OR</h6>
+    <hr>
+
+    <!-- 🔵 NORMAL FILE UPLOAD -->
+    <form method="POST" enctype="multipart/form-data">
+
+        <div class="mb-3">
+            <label class="form-label">Choose File (PDF / Image)</label>
+            <input type="file"
+                   name="file"
+                   class="form-control"
+                   accept=".pdf,image/*">
+        </div>
+
+        <!-- Hidden field for captured image -->
+        <input type="hidden" name="captured_image" id="captured_image">
+
+        <div class="text-center">
+            <button type="submit" class="btn btn-primary">
+                Upload & Generate Hash
+            </button>
+        </div>
+
+    </form>
+
+</div>
+
+<script>
+let video = document.getElementById("camera");
+let canvas = document.getElementById("canvas");
+let capturedInput = document.getElementById("captured_image");
+
+// Open webcam
+navigator.mediaDevices.getUserMedia({
+    video: { width: 640, height: 480 }
+})
+.then(stream => {
+    video.srcObject = stream;
+})
+.catch(err => {
+    alert("Camera access denied or not supported!");
+});
+
+// Capture image
+function capture() {
+
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+
+    let ctx = canvas.getContext("2d");
+    ctx.drawImage(video, 0, 0);
+
+    let imageData = canvas.toDataURL("image/png");
+    capturedInput.value = imageData;
+
+    alert("✅ Photo Captured! Now click Upload.");
+}
+</script>
+
+{% endblock %}

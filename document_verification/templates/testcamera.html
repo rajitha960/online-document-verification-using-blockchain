@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html>
+<body>
+
+<div class="text-center">
+<video id="camera" 
+       style="width: 350px; height: 260px; border-radius: 10px; border: 2px solid #333"
+        autoplay>
+</video>
+</div>
+
+<script>
+navigator.mediaDevices.getUserMedia({ video: true })
+.then(function(stream) {
+    document.getElementById("camera").srcObject = stream;
+})
+.catch(function(error) {
+    alert("Camera Error: " + error);
+});
+</script>
+
+</body>
+</html>

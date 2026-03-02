@@ -1,0 +1,105 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="container mt-4">
+
+    <!-- Welcome Card -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-body">
+            <h4 class="card-title">
+                Welcome, {{ session['username'] }} 👋
+            </h4>
+            <p class="text-muted mb-0">
+                Role: <strong>{{ session['role'] }}</strong>
+            </p>
+        </div>
+    </div>
+
+    <!-- Documents Section -->
+    <div class="card shadow-sm">
+        <div class="card-body">
+
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h5 class="mb-0">📄 My Documents</h5>
+                <a href="{{ url_for('upload') }}" 
+                   class="btn btn-primary btn-sm">
+                    + Upload New
+                </a>
+            </div>
+
+            {% if docs %}
+            <div class="table-responsive">
+                <table class="table table-striped table-bordered text-center align-middle">
+
+                    <thead class="table-dark">
+                        <tr>
+                            <th>ID</th>
+                            <th>Filename</th>
+                            <th>Status</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+                        {% for doc in docs %}
+                        <tr>
+                            <td>{{ doc[0] }}</td>
+                            <td>{{ doc[2] }}</td>
+
+                            <!-- STATUS -->
+                            <td>
+                                {% if doc[3] == "Approved" %}
+                                    <span class="badge bg-primary">Approved</span>
+
+                                {% elif doc[3] == "Verified" %}
+                                    <span class="badge bg-success">Verified</span>
+
+                                {% elif doc[3] == "Pending" %}
+                                    <span class="badge bg-warning text-dark">Pending</span>
+
+                                {% elif doc[3] == "Tampered" %}
+                                    <span class="badge bg-danger">Tampered</span>
+
+                                {% else %}
+                                    <span class="badge bg-secondary">
+                                        {{ doc[3] }}
+                                    </span>
+                                {% endif %}
+                            </td>
+
+                            <!-- ACTIONS -->
+                            <td>
+
+                                <!-- Admin Approve -->
+                                {% if session['role'] == 'admin' and doc[3] == "Pending" %}
+                                    <a href="{{ url_for('approve', id=doc[0]) }}"
+                                       class="btn btn-sm btn-primary me-1">
+                                        Approve
+                                    </a>
+                                {% endif %}
+
+                                <!-- Verify -->
+                                <a href="{{ url_for('verify', doc_id=doc[0]) }}"
+                                   class="btn btn-sm btn-success">
+                                    Verify
+                                </a>
+
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+
+                </table>
+            </div>
+            {% else %}
+                <div class="alert alert-info text-center">
+                    No documents uploaded yet.
+                </div>
+            {% endif %}
+
+        </div>
+    </div>
+
+</div>
+
+{% endblock %}

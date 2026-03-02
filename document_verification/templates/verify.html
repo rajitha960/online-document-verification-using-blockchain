@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<div class="row justify-content-center">
+    <div class="col-md-6">
+
+        <div class="card p-4 text-center shadow-sm">
+
+            <h3 class="mb-4">🔎 Verification Result</h3>
+
+            {% if "Tampered" in result %}
+                <div class="alert alert-danger">
+                    ❌ {{ result }}
+                </div>
+            {% elif "Verified" in result %}
+                <div class="alert alert-success">
+                    ✅ {{ result }}
+                </div>
+            {% else %}
+                <div class="alert alert-warning">
+                    {{ result }}
+                </div>
+            {% endif %}
+
+            <div class="mt-3">
+                <a href="{{ url_for('dashboard') }}" class="btn btn-primary">
+                    Back to Dashboard
+                </a>
+            </div>
+
+        </div>
+
+    </div>
+</div>
+
+{% endblock %}

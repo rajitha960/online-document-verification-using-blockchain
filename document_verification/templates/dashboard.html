@@ -1,0 +1,106 @@
+{% extends "base.html" %}
+{% block content %}
+
+<h3 class="mb-4">📊 Dashboard Overview</h3>
+
+<div class="row mb-4">
+    <div class="col-md-4">
+        <div class="card bg-primary text-white card-box p-3">
+            <h5>Total Documents</h5>
+            <h2>{{ docs|length }}</h2>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="card bg-success text-white card-box p-3">
+            <h5>Verified</h5>
+            <h2>
+                {{ docs | selectattr("status","equalto","Verified") | list | length }}
+            </h2>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="card bg-warning text-dark card-box p-3">
+            <h5>Pending</h5>
+            <h2>
+                {{ docs | selectattr("status","equalto","Pending") | list | length }}
+            </h2>
+        </div>
+    </div>
+</div>
+
+<div class="card shadow-sm">
+    <div class="card-header bg-dark text-white">
+        📂 Document Records
+    </div>
+    <div class="card-body">
+
+        <table class="table table-bordered table-hover">
+            <thead class="table-light">
+                <tr>
+                    <th>ID</th>
+                    <th>Filename</th>
+                    <th>Status</th>
+                    <th>Uploaded At</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for doc in docs %}
+<tr>
+    <td>{{ doc.id }}</td>
+    <td>{{ doc.filename }}</td>
+
+    <!-- STATUS COLUMN -->
+    <td>
+        {% if doc.status == "Verified" %}
+            <span class="badge bg-success">Verified</span>
+        {% elif doc.status == "Tampered" %}
+            <span class="badge bg-danger">Tampered</span>
+        {% else %}
+            <span class="badge bg-warning text-dark">Pending</span>
+        {% endif %}
+    </td>
+
+    <!-- UPLOADED AT COLUMN -->
+    <td>
+        {{ doc.uploaded_at.strftime('%d-%m-%Y %H:%M') if doc.uploaded_at else '' }}
+    </td>
+
+    <!-- ACTION COLUMN -->
+    <td>
+
+        <!-- VERIFY -->
+        <form action="{{ url_for('verify', doc_id=doc.id) }}" method="POST" style="display:inline;">
+            <button class="btn btn-success btn-sm">Verify</button>
+        </form>
+
+        <!-- ADMIN ONLY APPROVE -->
+        {% if session['role'] == 'admin' and doc.status == "Pending" %}
+        <form action="{{ url_for('approve', id=doc.id) }}" method="POST" style="display:inline;">
+            <button class="btn btn-primary btn-sm">Approve</button>
+        </form>
+        {% endif %}
+
+        <!-- ADMIN DELETE -->
+        {% if session['role'] == 'admin' %}
+        <form action="{{ url_for('delete', doc_id=doc.id) }}" method="POST" style="display:inline;">
+            <button class="btn btn-danger btn-sm"
+                onclick="return confirm('Are you sure?')">
+                Delete
+            </button>
+        </form>
+        {% endif %}
+
+    </td>
+</tr>
+{% endfor %}
+
+            </tbody>
+        </table>
+
+    </div>
+</div>
+
+{% endblock %}
